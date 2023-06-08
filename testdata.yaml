@@ -4,6 +4,9 @@ sleep_time: 1
 wait: 3
 user: Goshanchik
 passwd: c7bf3a2319
-title: Autopost
-description: This is the first autopost added
-content: An autotest for adding a new post was implemented to complete the homework.
+title: Autoposts
+description: This is the first autopost addeds
+content: Ans autotest for adding a new post was implemented to complete the homework.
+name: Vasyaesenin
+email: Vasyaesenin@yandex.ru
+message: Message lorem ipsum
