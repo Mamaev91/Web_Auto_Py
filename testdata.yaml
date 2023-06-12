@@ -10,3 +10,4 @@ content: Ans autotest for adding a new post was implemented to complete the home
 name: Vasyaesenin
 email: Vasyaesenin@yandex.ru
 message: Message lorem ipsum
+wsdl: https://speller.yandex.net/services/spellservice?WSDL

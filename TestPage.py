@@ -1,7 +1,8 @@
 from BaseApp import BasePage
 from selenium.webdriver.common.by import By
 import logging
-import yaml
+import yaml, requests
+from zeep import Client, Settings
 
 with open("testdata.yaml") as f:
     testdata = yaml.safe_load(f)
@@ -11,133 +12,163 @@ title = testdata["title"]
 description = testdata["description"]
 content = testdata["content"]
 class TestLocators:
-    x_selector_1 = (By.XPATH, "/html/body/div/main/div/div/div/form/div[1]/label/input")
-
-    x_selector_2 = (By.XPATH, "/html/body/div/main/div/div/div/form/div[2]/label/input")
-
-    x_selector_3 = (By.XPATH, '//*[@id="app"]/main/div/div/div[2]/h2')
-
-    btn_selector = (By.CSS_SELECTOR, "button")
-
-    hello_user = (By.XPATH, '//*[@id="app"]/main/nav/ul/li[3]/a')
-
-    create_btn = (By.CSS_SELECTOR, "button")
-
-    title_selector = (By.XPATH, '//*[@id="create-item"]/div/div/div[1]/div/label/input')
-
-    description_selector = (By.XPATH, '//*[@id="create-item"]/div/div/div[2]/div/label/span/textarea')
-
-    content_selector = (By.XPATH, '//*[@id="create-item"]/div/div/div[3]/div/label/span/textarea')
-
-    btn_save = (By.XPATH, '//*[@id="create-item"]/div/div/div[7]/div/button')
-
-    result_title = (By.XPATH, '//*[@id="app"]/main/div/div[1]/h1')
-
-
-
-
-    btn_contact_us = (By.XPATH, """//*[@id="app"]/main/nav/ul/li[2]/a""")
-
-    field_name = (By.XPATH, """//*[@id="contact"]/div[1]/label""")
-
-    field_email = (By.XPATH, """//*[@id="contact"]/div[2]/label""")
-
-    field_message = (By.XPATH, """//*[@id="contact"]/div[3]/label""")
-
-    btn_save_contact_us = (By.XPATH, """//*[@id="contact"]/div[4]/button""")
-
-
+    ids = dict()
+    with open("./locators.yaml") as f:
+        locators = yaml.safe_load(f)
+    for locator in locators["xpath"].keys():
+        ids[locator] = (By.XPATH, locators["xpath"][locator])
+    for locator in locators["css"].keys():
+        ids[locator] = (By.CSS_SELECTOR, locators["css"][locator])
 class Operations(BasePage, TestLocators):
-    def enter_login(self):
-        logging.info("Enter login")
-        input1 = self.find_element(self.x_selector_1)
-        input1.send_keys("test")
-    def enter_passwd(self):
-        logging.info("Enter password")
-        input2 = self.find_element(self.x_selector_2)
-        input2.send_keys("test")
-    def click_login_btn(self):
-        logging.info("Click button")
-        btn = self.find_element(self.btn_selector)
-        btn.click()
-    def get_error_text(self):
-        err_label = self.find_element(self.x_selector_3)
-        err_text = err_label.text
-        logging.info(f"Error {err_text}")
-        return err_text
-    def enter_login_value(self):
-        logging.info("Enter login")
-        input1 = self.find_element(self.x_selector_1)
-        input1.clear()
-        input1.send_keys(user)
-    def enter_passwd_value(self):
-        logging.info("Enter password")
-        input2 = self.find_element(self.x_selector_2)
-        input2.clear()
-        input2.send_keys(passwd)
+    def enter_text_into_field(self, locator, word, description=None):
+        if description:
+            element_name  = description
+        else:
+            element_name = locator
+        logging.debug(f"Send {word} to element {element_name}")
+        field = self.find_element(locator)
+        if not field:
+            logging.error(f"Element {locator} not found")
+            return False
+        try:
+            field.clear()
+            field.send_keys(word)
+        except:
+            logging.exception(f"Exception while operation with {locator}")
+            return False
+        return True
 
-    def find_hello_user(self):
-        find_element = self.find_element(self.hello_user)
-        element = find_element.text
-        return element
+    def click_button(self, locator, description=None):
+        if description:
+            element_name = description
+        else:
+            element_name = locator
+        button = self.find_element(locator)
+        if not button:
+            return False
+        try:
+            button.click()
+        except:
+            logging.exception("Exception with click")
+            return False
+        logging.debug(f"Clicked {element_name} button")
+        return True
 
-    def click_create_btn(self):
-        logging.info("Click create button")
-        c_btn = self.find_element(self.create_btn)
-        c_btn.click()
+    def get_text_from_element(self, locator, description=None):
+        if description:
+            element_name = description
+        else:
+            element_name = locator
+        field = self.find_element(locator, time=3)
+        if not field:
+            return None
+        try:
+            text = field.text
+        except:
+            logging.exception(f"Exception while get test from {element_name}")
+            return None
+        logging.debug(f"We find text {text} in field {element_name}")
+        return text
 
-    def input_title(self):
-        input_title = self.find_element(self.title_selector)
-        input_title.clear()
-        input_title.send_keys(title)
-    def input_description(self):
-        input_description = self.find_element(self.description_selector)
-        input_description.clear()
-        input_description.send_keys(description)
-    def input_content(self):
-        input_content = self.find_element(self.content_selector)
-        input_content.clear()
-        input_content.send_keys(content)
-    def click_btn_save(self):
-        logging.info("Click save button")
-        s_btn = self.find_element(self.btn_save)
-        s_btn.click()
-    def result_title(self):
-        result_title = self.find_element(self.result_title)
-        logging.info(f'Error {result_title.text}')
-        return result_title.text
 
-    def click_contact_us(self):
-        logging.info('Click button contact us')
-        btn_contact = self.find_element(self.btn_contact_us)
-        btn_contact.click()
+# ENTER TEXT
 
+    def enter_login(self, word):
+        self.enter_text_into_field(TestLocators.ids["x_selector_1"], word, description="Login format")
+    def enter_passwd(self, word):
+        self.enter_text_into_field(TestLocators.ids["x_selector_2"], word, description="Password format")
+    def input_title(self, word):
+        self.enter_text_into_field(TestLocators.ids["title_selector"], word, description="Title format")
+    def input_description(self, word):
+        self.enter_text_into_field(TestLocators.ids["description_selector"], word, description="Description format")
+    def input_content(self, word):
+        self.enter_text_into_field(TestLocators.ids["content_selector"], word, description="Content format")
     def enter_name(self, word):
-        logging.info('Enter name ')
-        input_name = self.find_element(self.field_name)
-        input_name.send_keys(word)
-
+        self.enter_text_into_field(TestLocators.ids["field_name"], word, description="Name format")
     def enter_email(self, word):
-        logging.info('Enter email')
-        input_email = self.find_element(self.field_email)
-        input_email.send_keys(word)
+        self.enter_text_into_field(TestLocators.ids["field_email"], word, description="Email format")
+    def enter_message(self, word):
+        self.enter_text_into_field(TestLocators.ids["field_message"], word, description="Message format")
 
-    def enter_message(self, text):
-        logging.info('Enter message')
-        input_message = self.find_element(self.field_message)
-        input_message.send_keys(text)
-
+# CLICK
+    def click_login_btn(self):
+        self.click_button(TestLocators.ids["btn_selector"], description="login")
+    def click_create_btn(self):
+        self.click_button(TestLocators.ids["create_btn"], description="Create")
+    def click_btn_save(self):
+        self.click_button(TestLocators.ids["btn_save"], description="Save")
+    def click_contact_us(self):
+        self.click_button(TestLocators.ids["btn_contact_us"], description="Contact us")
     def save_contact_us(self):
-        logging.info('Click button save message')
-        btn_save_c_u = self.find_element(self.btn_save_contact_us)
-        btn_save_c_u.click()
+        self.click_button(TestLocators.ids["btn_save_contact_us"], description="Save contact us")
 
+# GET TEXT
+    def get_error_text(self):
+        return self.get_text_from_element(TestLocators.ids["x_selector_3"], description="error")
+    def find_hello_user(self):
+        return self.get_text_from_element(TestLocators.ids["hello_user"], description="error")
+    def result_title(self):
+        return self.get_text_from_element(TestLocators.ids["result_title"], description="username")
     def check_alert(self):
-        alert = self.driver.switch_to.alert
-        logging.info(f'Error {alert.text}')
-        return alert.text
+        try:
+            alert = self.driver.switch_to.alert
+            logging.info(f'Error {alert.text}')
+            return alert.text
+        except:
+            logging.exception("Exception with alert")
+            return None
 
 
+class ApiTest:
+
+    def check_new_post(self, token):
+        try:
+            new_post = requests.get("https://test-stand.gb.ru/api/posts", headers={"X-Auth-Token": token},
+                                    params={'owner': 'notMe'})
+            listdescr = [i["description"] for i in new_post.json()["data"]]
+        except:
+            logging.exception(f"Exception while get test from {token}")
+            return None
+        logging.debug(f"We find text {listdescr} in field {new_post.json()}")
+        return listdescr
+
+    def create_new_post(self, token):
+        with open("testdata.yaml") as f:
+            user = yaml.safe_load(f)
+        try:
+            response = requests.post("https://test-stand.gb.ru/api/posts", headers={'X-Auth-Token': token},
+                                     data={'title': user['title'],
+                                           'description': user['description'],
+                                           'content': user['content']})
+        except:
+            logging.exception(f"Exception while get test from {token}")
+            return None
+        logging.debug(f"We are creating a new post {response.json()}")
+        return response.json()
+
+    def get_my_post(self, token):
+        try:
+            response = requests.get('https://test-stand.gb.ru/api/posts', headers={'X-Auth-Token': token})
+            listdescr = [i['description'] for i in response.json()['data']]
+        except:
+            logging.exception(f"Exception while get test from {token}")
+            return None
+        logging.debug(f"We getting description new post {listdescr}")
+        return listdescr
+
+    def checkText(self, word):
+        with open('testdata.yaml') as f:
+            wsdl = yaml.safe_load(f)['wsdl']
+
+        settings = Settings(strict=False)
+        client = Client(wsdl=wsdl, settings=settings)
+
+        try:
+            response = client.service.checkText(word)[0]['s']
+        except:
+            logging.exception("Find element exception")
+            response = None
+        return response
 
 
 
